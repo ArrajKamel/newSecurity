@@ -1,0 +1,37 @@
+package com.example.demo.serivce;
+
+import com.example.demo.model.EmailVerificationToken;
+import com.example.demo.model.MyUser;
+import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+@Service
+public class EmailService {
+    private final JavaMailSender _emailSender;
+    private final Environment _env;
+
+    @Autowired
+    public EmailService(JavaMailSender emailSender, Environment env) {
+        this._emailSender = emailSender;
+        this._env = env;
+    }
+
+    public void sendVerificationEmail(MyUser user, EmailVerificationToken token) {
+        System.out.println("sending verification email");
+        // constructing the url http://localhost:8000/api/auth/verify-email?token=$userId
+        String appUrl = _env.getProperty("app.base-url");
+        String verificationUrl = appUrl + "/api/auth/verify-email?tokenId=" + token.getTokenId();
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(_env.getProperty("spring.mail.username"));
+        message.setTo(user.getEmail());
+        message.setSubject("Verification Email");
+        message.setText("Click the link to verify your email: " + verificationUrl);
+
+        _emailSender.send(message);
+        System.out.println("Email :" + message + " sent successfully");
+    }
+}
