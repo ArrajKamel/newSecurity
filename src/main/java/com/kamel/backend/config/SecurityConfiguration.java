@@ -1,6 +1,8 @@
 package com.kamel.backend.config;
 
+import com.kamel.backend.security.JwtAuthenticationFilter;
 import com.kamel.backend.security.MyUserDetailsService;
+import com.kamel.backend.serivce.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,9 +10,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -18,9 +22,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 public class SecurityConfiguration {
     private final MyUserDetailsService _myUserDetailsService;
+    private final JwtAuthenticationFilter _jwtAuthenticationFilter;
     @Autowired
-    public SecurityConfiguration(MyUserDetailsService myUserDetailsService) {
+    public SecurityConfiguration(MyUserDetailsService myUserDetailsService,
+                                 JwtAuthenticationFilter jwtAuthenticationFilter) {
         _myUserDetailsService = myUserDetailsService;
+        _jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -28,11 +35,23 @@ public class SecurityConfiguration {
         return http
                 .cors(cors -> cors.disable())
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("api/auth/**").permitAll()
                         .requestMatchers("/api/auth/secure").authenticated()
+                        .requestMatchers("/api/user/**").hasRole("BOSS")
+                        .requestMatchers("/api/token/**").hasRole("BOSS")
+//                        .requestMatchers("api/product/create").hasRole("ROLE_SELLER")
+//                        .requestMatchers("api/product/update").hasRole("ROLE_SELLER")
+//                        .requestMatchers("api/product/delete").hasRole("ROLE_SELLER")
+//                        .requestMatchers("api/order/create").hasRole("ROLE_BUYER")
+//                        .requestMatchers("api/order/update").hasRole("ROLE_BUYER")
+//                        .requestMatchers("api/order/delete").hasRole("ROLE_BUYER")
                         .anyRequest().permitAll())
                 .formLogin(f -> f.disable())
                 .userDetailsService(_myUserDetailsService)
+                .addFilterBefore(_jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

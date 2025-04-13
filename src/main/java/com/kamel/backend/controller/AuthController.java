@@ -23,12 +23,10 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService _authService;
-    private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthController(AuthService authService, AuthenticationManager authenticationManager) {
+    public AuthController(AuthService authService) {
         _authService = authService;
-        this.authenticationManager = authenticationManager;
     }
 
 //
@@ -42,6 +40,11 @@ public class AuthController {
 //        }
 //    }
 
+    @GetMapping("/secure")
+    public String secure() {
+        return "secure";
+    }
+
     @PostMapping("/signup")
     public String signup(@RequestBody @Valid SignupRequest request) {
         _authService.handleSignup(request);
@@ -50,20 +53,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        // Authenticate the user
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-            );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            // handle updating the lastLoginAt attribute
-            MyUser user = (MyUser) authentication.getPrincipal();
-            _authService.setLoginDate(user);
+        return _authService.handleLogin(loginRequest);
 
-            return ResponseEntity.ok("Login successful");
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid credentials");
-        }
     }
 
     @GetMapping("/verify-email")

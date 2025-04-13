@@ -39,7 +39,7 @@ public class EmailVerificationTokenController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<?> getAllTokens() {
         return new ResponseEntity<>(_emailVerificationTokenService.getAllTokens(), HttpStatus.OK);
     }

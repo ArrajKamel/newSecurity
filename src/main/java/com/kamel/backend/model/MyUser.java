@@ -14,7 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * No Separate username: Email is the identifier.<br>
@@ -33,6 +35,12 @@ public class MyUser implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+//    @Column(nullable = false)
+    private String firstname;
+
+    private String lastname;
+
+    private String phoneNumber;
 
     /**
      * OAuth and local users share the same table -> unique email
@@ -93,13 +101,24 @@ public class MyUser implements UserDetails {
     private LocalDateTime lastLoginAt;
 
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_role",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
+
+
     /**
      * Implements UserDetails for Spring Security. <br>
      * Default role ROLE_USER assigned to all (customize later).
      */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
-        return List.of((new SimpleGrantedAuthority("ROLE_USER")));
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .collect(Collectors.toSet());
     }
 
     @Override public String getUsername() { return this.email; }

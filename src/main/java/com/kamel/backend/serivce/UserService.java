@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 @Service
 public class UserService {
@@ -22,6 +23,7 @@ public class UserService {
 
     @Transactional
     public void deleteUserById(UUID id) {
+        // TODO handle tokens deletion before user deletion to not violate the FK constraints
         _userRepo.deleteById(id);
     }
 

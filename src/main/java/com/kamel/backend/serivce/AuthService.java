@@ -1,37 +1,78 @@
 package com.kamel.backend.serivce;
 
+import com.kamel.backend.dto.LoginRequest;
 import com.kamel.backend.dto.SignupRequest;
 import com.kamel.backend.exception.EmailExistsException;
 import com.kamel.backend.exception.ExpiredTokenException;
 import com.kamel.backend.model.EmailVerificationToken;
 import com.kamel.backend.model.MyUser;
+import com.kamel.backend.repo.RoleRepo;
 import com.kamel.backend.repo.UserRepo;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class AuthService {
 
     private final UserRepo _userRepo;
+    private final RoleRepo _roleRepo;
     private final EmailVerificationTokenService _emailVerificationTokenService;
     private final EmailService _emailService;
     private final PasswordEncoder _passwordEncoder;
+    private final AuthenticationManager _authenticationManager;
+    private final JwtService _jwtService;
+
 
     @Autowired
     public AuthService(UserRepo userRepo,
                        EmailVerificationTokenService emailVerificationTokenService,
                        EmailService emailService,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       RoleRepo roleRepo,
+                       AuthenticationManager authenticationManager,
+                       JwtService jwtService) {
         _userRepo = userRepo;
         _emailVerificationTokenService = emailVerificationTokenService;
         _emailService = emailService;
         _passwordEncoder = passwordEncoder;
+        _roleRepo = roleRepo;
+        _authenticationManager = authenticationManager;
+        _jwtService = jwtService;
+    }
+
+
+    public ResponseEntity<?> handleLogin(LoginRequest loginRequest) {
+        // Authenticate the user
+        try {
+            Authentication authentication = _authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // handle updating the lastLoginAt attribute
+            MyUser user = (MyUser) authentication.getPrincipal();
+            user.setLastLoginAt(LocalDateTime.now());
+            _userRepo.save(user);
+
+            String jwt = _jwtService.generateToken(user);
+            return ResponseEntity.ok(Map.of("token", jwt));
+
+//            return ResponseEntity.ok("Login successful");
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Invalid credentials");
+        }
     }
 
     @Transactional
@@ -47,7 +88,6 @@ public class AuthService {
         _emailService.sendVerificationEmail(user, token);
     }
 
-//    @Transactional
     private MyUser createUser(@Valid SignupRequest signupRequest) throws EmailExistsException {
         if(_userRepo.existsByEmail(signupRequest.getEmail())){
             throw new EmailExistsException(signupRequest.getEmail());
@@ -57,7 +97,8 @@ public class AuthService {
         user.setEmail(signupRequest.getEmail());
         user.setPassword(_passwordEncoder.encode(signupRequest.getPassword()));
         user.setEmailScanConsent(signupRequest.isEmailScanConsent());
-//        user.setEnabled(false);
+        user.setRoles(Set.of(_roleRepo.findByName(signupRequest.getRole()).orElseThrow(EntityNotFoundException::new)));
+        user.setFirstname(signupRequest.getFirstname());
         return _userRepo.save(user);
     }
 
@@ -82,8 +123,7 @@ public class AuthService {
     }
 
 
-    public void setLoginDate(MyUser user) {
-        user.setLastLoginAt(LocalDateTime.now());
-        _userRepo.save(user);
-    }
+
+
+
 }
