@@ -20,14 +20,21 @@ import java.util.UUID;
 public class EmailVerificationTokenService {
 
     private final EmailVerificationTokenRepo _emailVerificationTokenRepo;
+    private final UserService _userService;
 
     @Autowired
-    public EmailVerificationTokenService(EmailVerificationTokenRepo emailVerificationTokenRepo) {
+    public EmailVerificationTokenService(EmailVerificationTokenRepo emailVerificationTokenRepo,
+                                         UserService userService) {
         _emailVerificationTokenRepo = emailVerificationTokenRepo;
+        _userService = userService;
     }
 
     @Transactional(isolation = Isolation.SERIALIZABLE)     // Prevents duplicate tokens in high concurrency
-    public EmailVerificationToken createToken(MyUser user) {
+    public EmailVerificationToken createToken(UUID userId) {
+        MyUser user = _userService.getUserById(userId);
+        if (user == null) {
+            throw new TokenCreationException("User not found");
+        }
         try {
 //            _emailVerificationTokenRepo.deleteByUser(user);
 //            deleteUserToken(user.getId());

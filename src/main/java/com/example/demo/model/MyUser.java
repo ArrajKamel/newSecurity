@@ -5,14 +5,23 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * No Separate username: Email is the identifier.<br>
+ * No Plaintext Passwords: Hashing handled by PasswordEncoder.<br>
+ * Minimal Roles: Start with ROLE_USER only (scale later).<br>
+ * GDPR Built-In: emailScanConsent enforced at registration.<br>
+ */
 @Entity
 @Data
 @AllArgsConstructor
@@ -24,18 +33,64 @@ public class MyUser implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+
+    /**
+     * OAuth and local users share the same table -> unique email
+     */
     @Column(nullable = false, unique = true)
     private String email;
 
+
+//    critical for password handling
+//    @Column(nullable = false)
+//    @Enumerated(EnumType.STRING)
+//    private MyAuthProvider provider;
+    /**
+     * for local users only -> nullable for OAuth users
+     */
     private String password;
 
+    /**
+     * OAuth users: emailVerified=true immediately (Google verifies emails). <br>
+     * Local users: emailVerified=false until email confirmation link clicked. <br>
+     */
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+    /**
+     * GDPR toggle
+     */
     @Column(nullable = false)
     private boolean emailScanConsent;
 
+    /**
+     * For OAuth users only (nullable for LOCAL). <br>
+     * Google's unique user ID
+     */
+//    private String oauth2ProviderId;
+    /**
+     * set to "true" after email verification is done successfully <br>
+     * Can disable accounts
+     */
     @Column(nullable = false)
-    private boolean enabled = false;
+    private boolean enabled = true;
 
 
+    /**
+     *     Timestamps (Auditing): <br>
+     * createdAt/updatedAt: Automatic with Hibernate annotations.<br>
+     * lastLoginAt: Detect inactive accounts.
+     */
+    @CreationTimestamp
+    @Column(nullable = true)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    /**
+     * Updated on every auth
+     */
+    private LocalDateTime lastLoginAt;
 
 
     /**

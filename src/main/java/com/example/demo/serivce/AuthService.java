@@ -10,21 +10,13 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class AuthService implements UserDetailsService {
+public class AuthService {
 
     private final UserRepo _userRepo;
     private final EmailVerificationTokenService _emailVerificationTokenService;
@@ -34,41 +26,29 @@ public class AuthService implements UserDetailsService {
     @Autowired
     public AuthService(UserRepo userRepo,
                        EmailVerificationTokenService emailVerificationTokenService,
-                       EmailService emailService) {
+                       EmailService emailService,
+                       PasswordEncoder passwordEncoder) {
         _userRepo = userRepo;
         _emailVerificationTokenService = emailVerificationTokenService;
         _emailService = emailService;
-        _passwordEncoder = new BCryptPasswordEncoder();
+        _passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     public void handleSignup(@Valid SignupRequest request) {
-//        // check if the user is existed or not
-//        if(_userRepo.existsByEmail(request.getEmail())){
-//            throw new EmailExistsException(request.getEmail());
-//        }
-//        //if the email is not existed
-//        //create a new user and store it as a "disable" user
-//
-//        MyUser user = new MyUser();
-//        user.setEmail(request.getEmail());
-//        user.setPassword(request.getPassword());
-//        user.setEmailScanConsent(request.isEmailScanConsent());
-//        user.setEnabled(false);
-//        _userRepo.save(user);
         MyUser user = createUser(request);
-        System.out.println("user is created : " + user.getEmail());
-        System.out.println("with id : " + user.getId());
+        System.out.println("user is created :" + user.getEmail());
+        System.out.println("with id : " +user.getId());
 
         //now we have the user, but we need to activate his/her account
         // create a token and send it via an Email
-        EmailVerificationToken token = _emailVerificationTokenService.createToken(user);
-        System.out.println("token is created : " + token.getTokenId());
+        EmailVerificationToken token = _emailVerificationTokenService.createToken(user.getId());
+        System.out.println("token is created : " +token.getTokenId());
         _emailService.sendVerificationEmail(user, token);
     }
 
-    @Transactional
-    public MyUser createUser(@Valid SignupRequest signupRequest) throws EmailExistsException {
+//    @Transactional
+    private MyUser createUser(@Valid SignupRequest signupRequest) throws EmailExistsException {
         if(_userRepo.existsByEmail(signupRequest.getEmail())){
             throw new EmailExistsException(signupRequest.getEmail());
         }
@@ -77,7 +57,7 @@ public class AuthService implements UserDetailsService {
         user.setEmail(signupRequest.getEmail());
         user.setPassword(_passwordEncoder.encode(signupRequest.getPassword()));
         user.setEmailScanConsent(signupRequest.isEmailScanConsent());
-        user.setEnabled(false);
+//        user.setEnabled(false);
         return _userRepo.save(user);
     }
 
@@ -89,9 +69,9 @@ public class AuthService implements UserDetailsService {
                 throw new ExpiredTokenException();
             }
 
-            // Enable user
+            // verify the user by setting "EmailVerified" attribute to ture
             MyUser user = token.getUser();
-            user.setEnabled(true);
+            user.setEmailVerified(true);
             _userRepo.save(user);
 
             // Cleanup
@@ -102,24 +82,8 @@ public class AuthService implements UserDetailsService {
     }
 
 
-    @Transactional
-    public void deleteUserById(UUID id) {
-        _userRepo.deleteById(id);
-    }
-
-
-    public List<MyUser> getAllUsers() {
-        return _userRepo.findAll();
-    }
-
-    public MyUser getUserById(UUID userId) {
-        return _userRepo.findById(userId).orElse(null);
-    }
-
-
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<MyUser> user = _userRepo.findByEmail(email);
-        return user.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public void setLoginDate(MyUser user) {
+        user.setLastLoginAt(LocalDateTime.now());
+        _userRepo.save(user);
     }
 }
