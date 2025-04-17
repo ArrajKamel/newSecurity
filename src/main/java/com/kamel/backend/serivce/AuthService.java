@@ -99,6 +99,7 @@ public class AuthService {
         user.setEmailScanConsent(signupRequest.isEmailScanConsent());
         user.setRoles(Set.of(_roleRepo.findByName(signupRequest.getRole()).orElseThrow(EntityNotFoundException::new)));
         user.setFirstname(signupRequest.getFirstname());
+        user.setLastname(signupRequest.getLastname());
         return _userRepo.save(user);
     }
 

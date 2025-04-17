@@ -2,7 +2,6 @@ package com.kamel.backend.config;
 
 import com.kamel.backend.security.JwtAuthenticationFilter;
 import com.kamel.backend.security.MyUserDetailsService;
-import com.kamel.backend.serivce.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,12 +19,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfiguration {
+public class SecurityConfig {
     private final MyUserDetailsService _myUserDetailsService;
     private final JwtAuthenticationFilter _jwtAuthenticationFilter;
     @Autowired
-    public SecurityConfiguration(MyUserDetailsService myUserDetailsService,
-                                 JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(MyUserDetailsService myUserDetailsService,
+                          JwtAuthenticationFilter jwtAuthenticationFilter) {
         _myUserDetailsService = myUserDetailsService;
         _jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
@@ -42,12 +41,13 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/auth/secure").authenticated()
                         .requestMatchers("/api/user/**").hasRole("BOSS")
                         .requestMatchers("/api/token/**").hasRole("BOSS")
-//                        .requestMatchers("api/product/create").hasRole("ROLE_SELLER")
-//                        .requestMatchers("api/product/update").hasRole("ROLE_SELLER")
-//                        .requestMatchers("api/product/delete").hasRole("ROLE_SELLER")
-//                        .requestMatchers("api/order/create").hasRole("ROLE_BUYER")
-//                        .requestMatchers("api/order/update").hasRole("ROLE_BUYER")
-//                        .requestMatchers("api/order/delete").hasRole("ROLE_BUYER")
+                        .requestMatchers("/api/product").permitAll()
+                        .requestMatchers("/api/product/create").hasRole("SELLER")
+                        .requestMatchers("/api/product/update/**").hasRole("SELLER")
+                        .requestMatchers("/api/product/delete/**").hasRole("SELLER")
+                        .requestMatchers("/api/order/create").hasRole("BUYER")
+                        .requestMatchers("/api/order/update").hasRole("BUYER")
+                        .requestMatchers("/api/order/delete").hasRole("BUYER")
                         .anyRequest().permitAll())
                 .formLogin(f -> f.disable())
                 .userDetailsService(_myUserDetailsService)

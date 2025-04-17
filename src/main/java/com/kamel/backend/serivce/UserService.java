@@ -6,10 +6,8 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
 @Service
 public class UserService {
@@ -53,6 +51,8 @@ public class UserService {
         user.setEnabled(true);
         _userRepo.save(user);
     }
+
+
 
 
 }
