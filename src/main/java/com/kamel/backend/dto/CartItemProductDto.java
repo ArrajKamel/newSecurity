@@ -10,14 +10,13 @@ import java.util.UUID;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class ProductResponse {
+@AllArgsConstructor
+public class CartItemProductDto {
     private UUID productId;
     private String productName;
     private String brand;
     private BigDecimal price;
-    private int quantityAvailable;
     private String model;
     private int year;
     private boolean used;

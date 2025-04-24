@@ -121,6 +121,10 @@ public class MyUser implements UserDetails {
                 .collect(Collectors.toSet());
     }
 
+    public boolean hasRole(String roleName) {
+        return roles.stream().anyMatch(role -> role.getName().equals("ROLE_" + roleName));
+    }
+
     @Override public String getUsername() { return this.email; }
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }

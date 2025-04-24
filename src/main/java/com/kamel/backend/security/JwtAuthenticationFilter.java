@@ -2,6 +2,8 @@ package com.kamel.backend.security;
 
 import com.kamel.backend.serivce.JwtService;
 import com.kamel.backend.serivce.UserService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,7 +47,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
-        userEmail = _jwtService.extractUsername(jwt);
+        try {
+            userEmail = _jwtService.extractUsername(jwt);
+        } catch (SignatureException | ExpiredJwtException e){
+            // Handle invalid JWT
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid JWT: " + e.getMessage());
+            return;  // Stop the filter chain from continuing
+        }
 
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = _myUserDetailsService.loadUserByUsername(userEmail);

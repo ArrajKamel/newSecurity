@@ -12,6 +12,7 @@ public class ProductMapper {
                 .productName(product.getProductName())
                 .brand(product.getBrand())
                 .price(product.getPrice())
+                .quantityAvailable(product.getQuantityAvailable())
                 .model(product.getModel())
                 .year(product.getYear())
                 .used(product.isUsed())
@@ -21,4 +22,7 @@ public class ProductMapper {
                 .seller(seller)
                 .build();
     }
+
+
+
 }

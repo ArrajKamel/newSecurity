@@ -76,6 +76,10 @@ public class ProductService {
         return ProductMapper.mapToDTO(product, seller);
     }
 
+    public Product getFullProductById(UUID productId) {  // do not use this method in the controller, it is meant for adding a n item to the cart in cart service
+        return _productRepo.findById(productId).orElseThrow( () -> new EntityNotFoundException("product not found"));
+    }
+
     public void deleteProduct(UUID productId) {
         if(!_productRepo.existsById(productId)) {
             throw new EntityNotFoundException("product not found");
