@@ -12,10 +12,13 @@ import com.kamel.backend.model.MyUser;
 import com.kamel.backend.model.Product;
 import com.kamel.backend.repo.CartItemRepo;
 import com.kamel.backend.repo.CartRepo;
+import com.kamel.backend.security.CostumeUserPrincipal;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -36,8 +39,16 @@ public class CartService {
         _productService = productService;
     }
 
-    public Cart createCart(UUID buyerId) {
-        MyUser buyer = _userService.getUserById(buyerId);
+    private UUID getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CostumeUserPrincipal principal = (CostumeUserPrincipal) authentication.getPrincipal();
+        return principal.getId();
+    }
+
+    public Cart createCart() {
+
+        System.out.println("the one from security context holder : " + getCurrentUserId());
+        MyUser buyer = _userService.getUserById(getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -46,7 +57,7 @@ public class CartService {
             throw new AccessDeniedException("Only BUYERs can own carts");
         }
 
-        if(_cartRepo.existsCartByBuyer_Id(buyerId)) {
+        if(_cartRepo.existsCartByBuyer_Id(getCurrentUserId())) {
             throw new CartExistsException();
         }
 
@@ -60,7 +71,7 @@ public class CartService {
 
     @Transactional
     public synchronized CartResponse addItemToCart(AddToCartRequest request) {
-        MyUser buyer = _userService.getUserById(request.getBuyerId());
+        MyUser buyer = _userService.getUserById(getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -110,8 +121,9 @@ public class CartService {
         return CartMapper.mapToDTO(cart, buyerDto);
     }
 
-    public List<CartItemDto> getAllItems(UUID buyerId) {
-        MyUser buyer = _userService.getUserById(buyerId);
+    public List<CartItemDto> getAllItems() {
+
+        MyUser buyer = _userService.getUserById(getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -137,4 +149,10 @@ public class CartService {
                 })
                 .toList();
     }
+//    public void deleteItemFromCart(UUID CartItemId){
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        CostumeUserPrincipal principal = (CostumeUserPrincipal) auth.getPrincipal();
+//        UUID userId = principal.getId();
+////        System.out.println(((UserPrincipal) auth.getPrincipal()).get);
+//    }
 }

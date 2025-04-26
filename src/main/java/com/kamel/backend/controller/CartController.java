@@ -24,9 +24,9 @@ public class CartController {
 
 
     @PostMapping("/init")
-    public ResponseEntity<?> initCart(@RequestParam UUID buyerId){
+    public ResponseEntity<?> initCart(){
 //        try {
-            Cart cart = _cartService.createCart(buyerId);
+            Cart cart = _cartService.createCart();
             return new ResponseEntity<>(cart, HttpStatus.CREATED);
 //        }catch (EntityNotFoundException ex){
 //            return  new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
@@ -41,8 +41,8 @@ public class CartController {
     }
 
     @GetMapping("/items")
-    public ResponseEntity<?> getItemsFromCart(@RequestParam UUID buyerId){
-        return new ResponseEntity<>(_cartService.getAllItems(buyerId), HttpStatus.OK);
+    public ResponseEntity<?> getItemsFromCart(){
+        return new ResponseEntity<>(_cartService.getAllItems(), HttpStatus.OK);
     }
 
 

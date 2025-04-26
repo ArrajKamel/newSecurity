@@ -14,6 +14,5 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AddToCartRequest {
     private UUID productId;
-    private UUID buyerId;
     private int quantity;
 }

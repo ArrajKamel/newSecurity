@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/order/create").hasRole("BUYER")
                         .requestMatchers("/api/order/update").hasRole("BUYER")
                         .requestMatchers("/api/order/delete").hasRole("BUYER")
-                        .requestMatchers("/api/cart/init**").hasRole("BUYER")
+                        .requestMatchers("/api/cart/init").hasRole("BUYER")
                         .requestMatchers("/api/cart/update").hasRole("BUYER")
                         .requestMatchers("/api/cart/delete").hasRole("BUYER")
                         .requestMatchers("/api/cart/item").hasRole("BUYER")
