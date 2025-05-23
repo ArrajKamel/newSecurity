@@ -39,16 +39,9 @@ public class CartService {
         _productService = productService;
     }
 
-    private UUID getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        CostumeUserPrincipal principal = (CostumeUserPrincipal) authentication.getPrincipal();
-        return principal.getId();
-    }
-
     public Cart createCart() {
 
-        System.out.println("the one from security context holder : " + getCurrentUserId());
-        MyUser buyer = _userService.getUserById(getCurrentUserId());
+        MyUser buyer = _userService.getUserById(_userService.getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -57,7 +50,7 @@ public class CartService {
             throw new AccessDeniedException("Only BUYERs can own carts");
         }
 
-        if(_cartRepo.existsCartByBuyer_Id(getCurrentUserId())) {
+        if(_cartRepo.existsCartByBuyer_Id(_userService.getCurrentUserId())) {
             throw new CartExistsException();
         }
 
@@ -71,7 +64,7 @@ public class CartService {
 
     @Transactional
     public synchronized CartResponse addItemToCart(AddToCartRequest request) {
-        MyUser buyer = _userService.getUserById(getCurrentUserId());
+        MyUser buyer = _userService.getUserById(_userService.getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -94,7 +87,7 @@ public class CartService {
 
         if (existingItem != null) {
             System.out.println("am i enter this scope");
-            // If the product is already in the cart, just update the quantity
+            // If the product is already in the cart, update the quantity
             int newQuantity = existingItem.getQuantity() + request.getQuantity();
             if(product.getQuantityAvailable() >= newQuantity) {
                 existingItem.setQuantity(newQuantity);
@@ -123,7 +116,7 @@ public class CartService {
 
     public List<CartItemDto> getAllItems() {
 
-        MyUser buyer = _userService.getUserById(getCurrentUserId());
+        MyUser buyer = _userService.getUserById(_userService.getCurrentUserId());
         if(buyer == null) {
             throw new EntityNotFoundException("buyer not found");
         }
@@ -134,25 +127,87 @@ public class CartService {
 
         // Use DTOs to avoid lazy loading issues
 
+        if(cart.getItems() == null) {
+            return List.of();
+        }
         return cart.getItems().stream()
                 .map(item -> {
                     SellerDto seller = SellerMapper.sellerInProduct(_userService.getUserById(item.getProduct().getSeller().getId()));
                     CartItemProductDto productDto = CartMapper.mapToDTO(item.getProduct(), seller);
-
-//                            Product product =_productService.getFullProductById(item.getProduct().getProductId());
-//                            MyUser seller = product.getSeller();
-//                            SellerDto sellerDto = SellerMapper.sellerInProduct(seller);
-//                            CartItemProductDto productDto = CartMapper.mapToDTO(product, sellerDto);
-//                            return CartMapper.mapToDTO(item, productDto);
                     return CartMapper.mapToDTO(item, productDto);
 
                 })
                 .toList();
     }
-//    public void deleteItemFromCart(UUID CartItemId){
-//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//        CostumeUserPrincipal principal = (CostumeUserPrincipal) auth.getPrincipal();
-//        UUID userId = principal.getId();
-////        System.out.println(((UserPrincipal) auth.getPrincipal()).get);
-//    }
+
+    public void deleteCartItem(UUID cartItemId) {
+        MyUser buyer = _userService.getCurrentUser();
+        if(buyer == null) {
+            throw new EntityNotFoundException("buyer not found");
+        }
+        Cart cart = _cartRepo.findCartByBuyer(buyer);
+        if(cart == null) {
+            throw new EntityNotFoundException("Cart not found for the buyer");
+        }
+        List<CartItem> items = cart.getItems();
+        boolean ownsCartItem = items.stream()
+                .anyMatch(item -> item.getId().equals(cartItemId));
+        if(!ownsCartItem) {
+            throw new EntityNotFoundException("This cart item is not yours");
+        }
+
+        CartItem item = items.stream()
+                .filter(i -> i.getId().equals(cartItemId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Cart item not found"));
+        items.remove(item);
+        _cartItemRepo.deleteById(cartItemId);
+    }
+
+    public void deleteCart(UUID cartId) {
+        MyUser buyer = _userService.getCurrentUser();
+        if(buyer == null) {
+            throw new EntityNotFoundException("buyer not found");
+        }
+        Cart cart = _cartRepo.findCartByBuyer(buyer);
+        if(cart == null) {
+            throw new EntityNotFoundException("Cart not found for the buyer");
+        }
+        if(!cart.getId().equals(cartId)) {
+            throw new EntityNotFoundException("This cart is not yours");
+        }
+        _cartRepo.deleteById(cartId);
+    }
+
+    public int updateCartItemQuantity(UUID cartItemId, boolean operation) {
+        MyUser buyer = _userService.getCurrentUser();
+        if(buyer == null){
+            throw new EntityNotFoundException("buyer not found");
+        }
+        Cart cart = _cartRepo.findCartByBuyer(buyer);
+        if(cart == null) {
+            throw new EntityNotFoundException("Cart not found for the buyer");
+        }
+
+        CartItem item = cart.getItems().stream()
+                .filter(i -> i.getId().equals(cartItemId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Cart item not found"));
+
+        // operation = true -> increment quantity
+        if(operation) {
+            if(item.getQuantity() >= item.getProduct().getQuantityAvailable()) {
+                throw new StockUnavailableException("Insufficient stock for the requested quantity");
+            }
+            int newQuantity = item.getQuantity() + 1;
+            item.setQuantity(newQuantity);
+        }else{
+            if(item.getQuantity() <= 1) {
+                throw new StockUnavailableException("you have only one item in your cart, delete it it instead of decrementing it");
+            }
+            int newQuantity = item.getQuantity() - 1;
+            item.setQuantity(newQuantity);
+        }
+        return _cartItemRepo.save(item).getQuantity();
+    }
 }

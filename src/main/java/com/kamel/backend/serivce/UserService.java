@@ -2,9 +2,12 @@ package com.kamel.backend.serivce;
 
 import com.kamel.backend.model.MyUser;
 import com.kamel.backend.repo.UserRepo;
+import com.kamel.backend.security.CostumeUserPrincipal;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +26,18 @@ public class UserService {
     public void deleteUserById(UUID id) {
         // TODO handle tokens deletion before user deletion to not violate the FK constraints
         _userRepo.deleteById(id);
+    }
+
+    protected UUID getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CostumeUserPrincipal principal = (CostumeUserPrincipal) authentication.getPrincipal();
+        return principal.getId();
+    }
+
+    protected MyUser getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CostumeUserPrincipal principal = (CostumeUserPrincipal) authentication.getPrincipal();
+        return _userRepo.findById(principal.getId()).orElse(null);
     }
 
 

@@ -31,11 +31,12 @@ public class ProductService {
         _categoryService = categoryService;
     }
 
-    public Product createProduct(CreateProductRequest productDto, UUID sellerId) {
-        MyUser seller = _userService.getUserById(sellerId);
+    public Product createProduct(CreateProductRequest productDto) {
+        MyUser seller = _userService.getUserById(_userService.getCurrentUserId());
         if(seller == null) {
             throw new EntityNotFoundException("seller not found");
         }
+
         Category category = _categoryService.findByName(productDto.getCategoryName()).orElseThrow(
                 () -> new EntityNotFoundException("Category not found")
         );
@@ -81,13 +82,26 @@ public class ProductService {
     }
 
     public void deleteProduct(UUID productId) {
-        if(!_productRepo.existsById(productId)) {
-            throw new EntityNotFoundException("product not found");
+        MyUser seller = _userService.getUserById(_userService.getCurrentUserId());
+        if(seller == null) {
+            throw new EntityNotFoundException("seller not found");
         }
+        List<Product> sellerProduct = _productRepo.findAllBySeller(seller);
+
+        Product product = _productRepo.findById(productId)
+                .orElseThrow( () -> new EntityNotFoundException("product not found"));
+
+        boolean ownsProduct = sellerProduct.stream()
+                .anyMatch(p -> p.getProductId().equals(productId));
+
+        if(!ownsProduct) {
+//            System.out.println("am i getting here");
+            throw new EntityNotFoundException("this product is not yours");
+        }
+        System.out.println("the product is yours");
 
         _productRepo.deleteById(productId);
     }
-
 
     public ProductResponse updateProductPartially(UUID productId, UpdateProductRequest patchDto) {
         Product product = _productRepo.findById(productId)
@@ -104,7 +118,7 @@ public class ProductService {
         if (patchDto.getFuelType() != null) product.setFuelType(patchDto.getFuelType());
         if (patchDto.getTransmission() != null) product.setTransmission(patchDto.getTransmission());
         if (patchDto.getMileageKm() != null) product.setMileageKm(patchDto.getMileageKm());
-
+        if(patchDto.getUsed() != null) {product.setUsed(patchDto.getUsed());}
         if (patchDto.getCategoryName() != null) {
             Category category = _categoryService.findByName(patchDto.getCategoryName())
                     .orElseThrow(() -> new EntityNotFoundException("Category not found"));

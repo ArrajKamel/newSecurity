@@ -25,9 +25,9 @@ public class ProductController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createProduct(@RequestBody CreateProductRequest productDto, @RequestParam UUID sellerId) {
+    public ResponseEntity<?> createProduct(@RequestBody CreateProductRequest productDto) {
         try {
-            Product product = _productService.createProduct(productDto, sellerId);
+            Product product = _productService.createProduct(productDto);
             return new ResponseEntity<>(product, HttpStatus.CREATED);
         }catch (EntityNotFoundException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

@@ -24,4 +24,5 @@ public class UpdateProductRequest {
     private String transmission;
     private Integer mileageKm;
     private String categoryName; // optional if category can be changed
+    private Boolean used;
 }
