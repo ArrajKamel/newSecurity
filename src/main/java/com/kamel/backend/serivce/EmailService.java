@@ -1,5 +1,6 @@
 package com.kamel.backend.serivce;
 
+import com.kamel.backend.dto.OrderResponseDto;
 import com.kamel.backend.model.EmailVerificationToken;
 import com.kamel.backend.model.MyUser;
 import org.springframework.core.env.Environment;
@@ -30,6 +31,19 @@ public class EmailService {
         message.setTo(user.getEmail());
         message.setSubject("Verification Email");
         message.setText("Click the link to verify your email: " + verificationUrl);
+
+        _emailSender.send(message);
+        System.out.println("Email :" + message + " sent successfully");
+    }
+
+    public void sendOrderConfirmationEmail(OrderResponseDto orderResponseDto, MyUser buyer) {
+        System.out.println("sending order confirmation email");
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(_env.getProperty("spring.mail.username"));
+        message.setTo(buyer.getEmail());
+        message.setSubject("your order has been placed successfully");
+        message.setText(orderResponseDto.toString());
 
         _emailSender.send(message);
         System.out.println("Email :" + message + " sent successfully");

@@ -42,7 +42,7 @@ public class ProductController {
     @GetMapping("/{productId}")
     public ResponseEntity<?> getProductById(@PathVariable UUID productId) {
         try {
-            ProductResponse product = _productService.getProdctById(productId);
+            ProductResponse product = _productService.getProductById(productId);
             return new ResponseEntity<>(product, HttpStatus.OK);
         }catch (EntityNotFoundException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

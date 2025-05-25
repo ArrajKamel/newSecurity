@@ -59,6 +59,9 @@ public class Product {
     @Column(nullable = false)
     private boolean used; // a fuckin big issue for the name of the attribute "used" becomes "isUsed" and bullshit like this
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id", nullable = false)
     private MyUser seller;

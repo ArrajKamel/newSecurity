@@ -210,4 +210,8 @@ public class CartService {
         }
         return _cartItemRepo.save(item).getQuantity();
     }
+
+    protected Cart findByBuyer(MyUser buyer){
+        return _cartRepo.findCartByBuyer(buyer);
+    }
 }

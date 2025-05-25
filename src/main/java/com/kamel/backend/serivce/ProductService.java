@@ -14,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -70,11 +71,14 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    public ProductResponse getProdctById(UUID productId) {
+    public ProductResponse getProductById(UUID productId) {
         Product product =  _productRepo.findById(productId)
                 .orElseThrow( () -> new EntityNotFoundException("product not found"));
         SellerDto seller = SellerMapper.sellerInProduct(_userService.getUserById(product.getSeller().getId()));
         return ProductMapper.mapToDTO(product, seller);
+    }
+    public Optional<Product> findProductById(UUID productId) {
+        return _productRepo.findById(productId);
     }
 
     public Product getFullProductById(UUID productId) {  // do not use this method in the controller, it is meant for adding a n item to the cart in cart service
@@ -128,6 +132,23 @@ public class ProductService {
         Product updatedProduct =  _productRepo.save(product);
         SellerDto seller = SellerMapper.sellerInProduct(_userService.getUserById(product.getSeller().getId()));
         return ProductMapper.mapToDTO(updatedProduct, seller);
+    }
+
+    /**
+     *
+     * @param productId
+     * @param quantity
+     * @return the new quantity available after the update
+     */
+    protected int increaseProductQuantity(UUID productId, int quantity) {
+        Product product = _productRepo.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+        product.setQuantityAvailable(product.getQuantityAvailable() + quantity);
+        return product.getQuantityAvailable();
+    }
+
+    protected void save(Product product){
+        _productRepo.save(product);
     }
 
 }
