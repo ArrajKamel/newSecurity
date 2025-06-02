@@ -1,10 +1,12 @@
 package com.kamel.backend.serivce;
 
 import com.kamel.backend.dto.OrderResponseDto;
+import com.kamel.backend.dto.OrderXmlDto;
 import com.kamel.backend.exception.CartIsEmptyException;
 import com.kamel.backend.exception.ConcurrencyRetryException;
 import com.kamel.backend.exception.StockUnavailableException;
 import com.kamel.backend.mapper.OrderMapper;
+import com.kamel.backend.mapper.OrderToXmlMapper;
 import com.kamel.backend.model.*;
 import com.kamel.backend.repo.OrderRepo;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -125,4 +128,13 @@ public class OrderService {
         return _orderRepo.save(order);
 
     }
+
+    @Transactional
+    public OrderXmlDto exportOrderAsXml(UUID orderId) {
+        Order order = _orderRepo.findById(orderId).orElseThrow(
+                () -> new EntityNotFoundException("Order not found")
+        );
+        return OrderToXmlMapper.mapToXmlDto(order); // or directly use the method above
+    }
+
 }
